@@ -9,10 +9,10 @@ function unproxy<T>(proxy: FunctionProxy<T>): T {
 	});
 }
 
-function mergeLazy<A, B>(a: A, b: B): A & B {
+function mergeLazy<A, B>(a: () => A, b: () => B): A & B {
 	return new Proxy({} as any, {
-		get: (target, key) => (key in a ? (a as any)[key] : (b as any)[key]),
-		enumerate: () => Object.keys(a).concat(Object.keys(b)),
+		get: (target, key) => (key in a() ? (a() as any)[key] : (b() as any)[key]),
+		enumerate: () => Object.keys(a()).concat(Object.keys(b())),
 	});
 }
 

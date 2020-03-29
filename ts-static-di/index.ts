@@ -9,7 +9,6 @@ interface Definition {
 	name: string;
 	alias: string;
 	local?: string[];
-	runtime?: boolean;
 	singleton?: boolean;
 }
 
@@ -33,15 +32,12 @@ export function createContainer() {
 					.join("\n") +
 				"\n\n";
 
-			const containerType =
-				"interface Container extends ManualGlobalDependencies {\n" +
+			const autoDependenciesType =
+				"interface AutoDependencies {\n" +
 				files
 					.map((file) =>
 						file.definitions
 							.map((definition) => {
-								if (definition.runtime) {
-									return "";
-								}
 								return `${definition.alias}: ReturnType<typeof value_${definition.alias}>;`;
 							})
 							.join("")
@@ -49,20 +45,31 @@ export function createContainer() {
 					.join("") +
 				"}\n";
 
-			const globalType =
-				"interface ManualGlobalDependencies {" +
+			const allDependenciesType =
+				"type AllDependencies = " +
 				files
 					.map((file) =>
 						file.definitions
 							.map((definition) => {
-								return !definition.runtime
-									? ""
-									: definition.alias + ": value_" + definition.alias + ";";
+								const except = definition.local
+									? definition.local.map((local) => `"${local}"`).join("|")
+									: "";
+								const type = `FirstArgument<typeof value_${definition.alias}>`;
+								return except ? `Omit<${type},${except}>` : type;
 							})
-							.join("")
+							.filter((l) => l)
+							.join("&")
 					)
-					.join("") +
-				"}";
+					.filter((l) => l)
+					.join("&") +
+				";";
+
+			const containerType =
+				"type Container = AllDependencies & AutoDependencies;";
+
+			const globalType =
+				"type ManualGlobalDependencies = Omit<Container,keyof AutoDependencies>;";
+
 			const localType =
 				"interface ManualLocalDependencies {" +
 				files
@@ -86,32 +93,30 @@ export function createContainer() {
 			const functionDefinition = `export default function(build: (container: Container)=>{global: FunctionProxy<ManualGlobalDependencies>, local: DeepFunctionProxy<ManualLocalDependencies>}){`;
 
 			const container =
-				"let container: Container;const {global,local} = build(container=unproxy({" +
+				"let container: Container;const {global,local} = build(container=unproxy(mergeLazy(()=>({" +
 				files
 					.map((file) =>
 						file.definitions
 							.map((definition) => {
-								if (definition.runtime) {
-									return `${definition.alias}:()=>global.${definition.alias}(),`;
-								} else {
-									return `${definition.alias}:${
-										definition.singleton ? "singleton(" : ""
-									}()=>value_${definition.alias}(${
-										definition.local && definition.local.length
-											? `mergeLazy(unproxy(local.${definition.alias}),container)`
-											: "container"
-									})${definition.singleton ? ")" : ""},`;
-								}
+								return `${definition.alias}:${
+									definition.singleton ? "singleton(" : ""
+								}()=>value_${definition.alias}(${
+									definition.local && definition.local.length
+										? `mergeLazy(()=>unproxy(local.${definition.alias}),()=>container)`
+										: "container"
+								})${definition.singleton ? ")" : ""},`;
 							})
 							.join("")
 					)
 					.join("") +
-				"}));";
+				"}),()=>global)));";
 			const functionEnd = "return container;}";
 			return format(
 				imports +
 					utilities +
 					containerType +
+					autoDependenciesType +
+					allDependenciesType +
 					globalType +
 					localType +
 					functionDefinition +

@@ -1,5 +1,6 @@
-export function makeRepository({}) {
+import { Logger } from "./logger";
+export function makeRepository({ logger }: { logger: Logger }) {
 	return {
-		repositoryFunction: () => console.log("hi from repository")
+		repositoryFunction: () => logger.log("hi from repository")
 	};
 }
