@@ -93,7 +93,7 @@ export function createContainer() {
 			const functionDefinition = `export default function(build: (container: Container)=>{global: FunctionProxy<ManualGlobalDependencies>, local: DeepFunctionProxy<ManualLocalDependencies>}){`;
 
 			const container =
-				"let container: Container;const {global,local} = build(container=unproxy(mergeLazy(()=>({" +
+				"let container: Container;const {global,local} = build(container=unproxy(mergeLazy(singleton(()=>({" +
 				files
 					.map((file) =>
 						file.definitions
@@ -109,7 +109,7 @@ export function createContainer() {
 							.join("")
 					)
 					.join("") +
-				"}),()=>global)));";
+				"})),()=>global)));";
 			const functionEnd = "return container;}";
 			return format(
 				imports +
