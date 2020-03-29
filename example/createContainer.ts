@@ -27,6 +27,7 @@ container.register("./logger", [
 		name: "makeLogger",
 		alias: "logger",
 		runtime: false,
+		singleton: true,
 	},
 ]);
 

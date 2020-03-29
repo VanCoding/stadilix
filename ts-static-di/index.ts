@@ -83,32 +83,30 @@ export function createContainer() {
 					)
 					.join("") +
 				"}";
-			const functionDefinition = `export default function(build: (container: Container)=>{global: ManualGlobalDependencies, local: ManualLocalDependencies}){`;
+			const functionDefinition = `export default function(build: (container: Container)=>{global: FunctionProxy<ManualGlobalDependencies>, local: DeepFunctionProxy<ManualLocalDependencies>}){`;
 
 			const container =
-				"let container: Container;const {global,local} = build(container = makeProxy({" +
+				"let container: Container;const {global,local} = build(container=unproxy({" +
 				files
 					.map((file) =>
 						file.definitions
 							.map((definition) => {
 								if (definition.runtime) {
-									return "";
+									return `${definition.alias}:()=>global.${definition.alias}(),`;
+								} else {
+									return `${definition.alias}:${
+										definition.singleton ? "singleton(" : ""
+									}()=>value_${definition.alias}(${
+										definition.local && definition.local.length
+											? `mergeLazy(unproxy(local.${definition.alias}),container)`
+											: "container"
+									})${definition.singleton ? ")" : ""},`;
 								}
-								const local = definition.local
-									? definition.local
-											.map((m) => `${m}: local.${definition.alias}.${m}`)
-											.join(",")
-									: "";
-								return `get ${definition.alias}(){return value_${
-									definition.alias
-								}(${
-									local ? `makeProxy({${local}},container)` : "container"
-								})},`;
 							})
 							.join("")
 					)
 					.join("") +
-				"},new Proxy<Container>({} as any, {get: (target, property) => (global as any)[property]})));";
+				"}));";
 			const functionEnd = "return container;}";
 			return format(
 				imports +

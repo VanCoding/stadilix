@@ -1,14 +1,12 @@
-import Container from "./container";
+import Container, { singleton } from "./container";
 import { makeConfigurable } from "./configurable";
 
 const container = Container(container => ({
 	global: {
-		get configurable() {
-			return makeConfigurable(container);
-		}
+		configurable: singleton(() => makeConfigurable(container))
 	},
 	local: {
-		service: { port: 80 }
+		service: { port: () => 80 }
 	}
 }));
 
