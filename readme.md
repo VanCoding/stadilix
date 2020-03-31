@@ -63,15 +63,21 @@ const container = Container((container) => ({
 container.service.serviceFunction();
 ```
 
-## drawbacks
+## pros
+
+- find errors at compile-time
+- your code is completely decoupled from the DI library
+- reduce boilerplate code to a minimum
+
+## conts
 
 - There's an additional compilation step
-- Still experimentalW
-- A lot of features are missing
+- Still experimental
+- A lot of features are still missing
 
 ## contributing
 
-I'm very welcome to opinions about the library and ideas how to improve it. Just open a GitHub issue.
+I'm very welcome to opinions about the library and ideas on how to improve it. Just open a GitHub issue.
 
 ## License
 
