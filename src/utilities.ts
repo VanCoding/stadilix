@@ -23,7 +23,7 @@ type DeepFunctionProxy<T> = {
 	[U in keyof T]: FunctionProxy<T[U]>;
 };
 
-export function singleton<T extends Array<any>, U>(fn: (...args: T) => U) {
+function singleton<T extends Array<any>, U>(fn: (...args: T) => U) {
 	let value: U;
 	return (...args: T) => {
 		if (!value) {
@@ -31,4 +31,11 @@ export function singleton<T extends Array<any>, U>(fn: (...args: T) => U) {
 		}
 		return value;
 	};
+}
+
+function conditionalSingleton<T extends Array<any>, U>(
+	isSingleton: boolean,
+	fn: (...args: T) => U
+) {
+	return isSingleton ? singleton(fn) : fn;
 }

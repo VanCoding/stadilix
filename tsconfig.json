@@ -1,10 +1,11 @@
 {
 	"compilerOptions": {
 		"target": "ES5",
+		"esModuleInterop": true,
 		"noImplicitAny": true,
 		"baseUrl": ".",
 		"paths": {
-			"ts-static-di/*": ["./ts-static-di/*"]
+			"ts-static-di/*": ["stadilix/*"]
 		}
 	}
 }

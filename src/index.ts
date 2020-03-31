@@ -1,5 +1,7 @@
 import { format } from "prettier";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
+import path from "path";
+import glob from "glob";
 
 interface Source {
 	path: string;
@@ -9,16 +11,67 @@ interface Definition {
 	name: string;
 	alias: string;
 	local?: string[];
-	singleton?: boolean;
 }
 
 const utilities = readFileSync(__dirname + "/utilities.ts") + "";
 
-export function createContainer() {
-	const files: Source[] = [];
+function getDefaultModule(filePath: string) {
+	const fileNameWithoutExtension = path.basename(filePath).split(".")[0];
 	return {
+		name:
+			"make" +
+			fileNameWithoutExtension[0].toUpperCase() +
+			fileNameWithoutExtension.substr(1),
+		alias:
+			fileNameWithoutExtension[0].toLocaleLowerCase() +
+			fileNameWithoutExtension.substr(1),
+	};
+}
+
+function populatePathList(basepath: string, paths: string[]) {
+	const allPaths: string[] = [];
+	paths.map((path) => {
+		if (path[0] != "/" && path[0] != ".") path = "./" + path;
+		glob
+			.sync(path, { cwd: basepath, nodir: true })
+			.forEach((p) => allPaths.push(p));
+	});
+	return allPaths;
+}
+
+function listExceptList(paths: string[], except: string[]) {
+	return paths.filter((path) => !except.includes(path));
+}
+
+export function createBuilder(basepath: string) {
+	const files: Source[] = [];
+	const builder = {
 		register: (path: string, definitions: Definition[]) => {
-			files.push({ path, definitions });
+			files.push({ path: path.replace(".ts", ""), definitions });
+		},
+		registerAll: ({
+			paths,
+			except,
+			modules = (filePath: string) => [getDefaultModule(filePath)],
+		}: {
+			paths: string[];
+			except: string[];
+			modules?: (filePath?: string) => { name: string; alias: string }[];
+		}) => {
+			const allPaths = listExceptList(
+				populatePathList(basepath, paths),
+				populatePathList(basepath, except)
+			);
+			for (const path of allPaths) {
+				builder.register(path, modules(path));
+			}
+		},
+		registerManuals: (modules: string[], manuals: string[]) => {
+			for (const file of files) {
+				for (const module of file.definitions) {
+					if (modules.includes(module.alias)) module.local = manuals;
+				}
+			}
 		},
 		build: () => {
 			const imports =
@@ -90,21 +143,22 @@ export function createContainer() {
 					)
 					.join("") +
 				"}";
-			const functionDefinition = `export default function(build: (container: Container)=>{global: FunctionProxy<ManualGlobalDependencies>, local: DeepFunctionProxy<ManualLocalDependencies>}){`;
+			const functionDefinition = `export default function(build: (container: Container)=>{global: FunctionProxy<ManualGlobalDependencies>, local: DeepFunctionProxy<ManualLocalDependencies>,nonSingletons?: Array<keyof Container>}){`;
 
 			const container =
-				"let container: Container;const {global,local} = build(container=unproxy(mergeLazy(singleton(()=>({" +
+				"let container: Container;const {global,local,nonSingletons} = build(container=unproxy(mergeLazy(singleton(()=>({" +
 				files
 					.map((file) =>
 						file.definitions
 							.map((definition) => {
-								return `${definition.alias}:${
-									definition.singleton ? "singleton(" : ""
-								}()=>value_${definition.alias}(${
+								return `${definition.alias}:
+								conditionalSingleton(!nonSingletons.includes("${definition.alias}"),()=>value_${
+									definition.alias
+								}(${
 									definition.local && definition.local.length
 										? `mergeLazy(()=>unproxy(local.${definition.alias}),()=>container)`
 										: "container"
-								})${definition.singleton ? ")" : ""},`;
+								})),`;
 							})
 							.join("")
 					)
@@ -125,5 +179,9 @@ export function createContainer() {
 				{ parser: "typescript" }
 			);
 		},
+		buildToFile: (path: string) => {
+			writeFileSync(path, builder.build());
+		},
 	};
+	return builder;
 }
