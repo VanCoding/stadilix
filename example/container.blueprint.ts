@@ -1,9 +1,9 @@
 import { createBuilder } from "../src/index";
 
-const container = createBuilder(__dirname);
-container.registerAll({
+const builder = createBuilder(__dirname);
+builder.registerAll({
 	paths: ["./**"],
 	except: ["app.ts", "container*", "configurable.ts"],
 });
-container.registerManuals(["service"], ["port"]);
-container.buildToFile(__dirname + "/container.ts");
+builder.registerManuals(["service"], ["port"]);
+builder.buildToFile(__dirname + "/container.ts");

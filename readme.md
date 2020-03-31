@@ -20,20 +20,20 @@ This library is still very experimental and should not be used in production. It
 import { createBuilder } from "../src/index";
 
 //create a builder, it'll resolve files from the given path
-const container = createBuilder(__dirname);
+const builder = createBuilder(__dirname);
 
 //tell the builder, which files it should auto-resolve
 //currently, all such files must be factory functions, no classes or static values are currently supported
-container.registerAll({
+builder.registerAll({
 	paths: ["./**"], //here we say all files
 	except: ["app.ts", "container*", "configurable.ts"], //except app.ts, "configurable.ts" and all files starting with "container"
 });
 
 //tell the builder, which dependencies we'll provide manually for each module
-container.registerManuals(["service"], ["port"]); //here we say, that we'll provide the dependency "port" for the module "service" manually.
+builder.registerManuals(["service"], ["port"]); //here we say, that we'll provide the dependency "port" for the module "service" manually.
 
 //build the container.ts file
-container.buildToFile(__dirname + "/container.ts");
+builder.buildToFile(__dirname + "/container.ts");
 ```
 
 2. run the blueprint file to generate the container file
