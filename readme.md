@@ -16,7 +16,7 @@ This library is still very experimental and should not be used in production. It
 
 1. create a blueprint file, for example "container.blueprint.ts". In this, build a container file using the stadilix builder. Here's an example:
 
-```
+```ts
 import { createBuilder } from "../src/index";
 
 //create a builder, it'll resolve files from the given path
@@ -40,7 +40,7 @@ container.buildToFile(__dirname + "/container.ts");
 
 3. import the container, and use it to bootstrap your application
 
-```
+```ts
 //app.ts
 import Container from "./container";
 import { makeConfigurable } from "./configurable";
